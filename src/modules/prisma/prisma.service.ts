@@ -11,68 +11,90 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
     super();
   }
 
-  async onModuleInit() {
-    // Middleware for audit trail on writes
-    this.$use(async (params, next) => {
-      const auditedModels = new Set(['SmtpConfig', 'Contact', 'Template', 'CensusFile', 'CensusSettings', 'EmailMessage', 'User']);
-      const isWrite =
-        ['create', 'update', 'upsert', 'delete', 'deleteMany', 'updateMany', 'createMany'].includes(params.action);
-      if (!auditedModels.has(params.model ?? '') || !isWrite) {
-        return next(params);
+async onModuleInit() {
+  // Middleware para auditoría en operaciones de escritura
+  this.$use(async (params, next) => {
+    const auditedModels = new Set(['SmtpConfig', 'Contact', 'Template', 'CensusFile', 'CensusSettings', 'EmailMessage', 'User']);
+    const isWrite = ['create', 'update', 'upsert', 'delete', 'deleteMany', 'updateMany', 'createMany'].includes(params.action);
+
+    if (!auditedModels.has(params.model ?? '') || !isWrite) {
+      return next(params);
+    }
+
+    const model = params.model!;
+    // Normalización vital: "CensusSettings" -> "censusSettings"
+    // Esto evita el error 'undefined (reading findUnique)'
+    const modelKey = model.charAt(0).toLowerCase() + model.slice(1);
+    
+    let before: any = null;
+    const recordId =
+      (params.args?.where?.id as string | undefined) ||
+      (params.args?.where?.['id'] as string | undefined) ||
+      null;
+
+      const dynamicThis = this as any;
+
+    // Leer estado "antes" para operaciones sobre registros únicos
+    if (recordId && ['update', 'delete', 'upsert'].includes(params.action)) {
+      try {
+       
+        if (dynamicThis[modelKey]) {
+          before = await dynamicThis[modelKey].findUnique({ where: { id: recordId } });
+        }
+      } catch (e) {
+        console.warn(`No se pudo leer el estado previo de ${modelKey}`);
       }
+    }
 
-      const model = params.model!;
-      let before: any = null;
+    const result = await next(params);
 
-      const recordId =
-        (params.args?.where?.id as string | undefined) ||
-        (params.args?.where?.['id'] as string | undefined) ||
-        null;
-
-      // Read "before" state for single-record update/delete
-      if (recordId && ['update', 'delete', 'upsert'].includes(params.action)) {
+    // Leer estado "después" si es necesario
+    let after: any = null;
+    if (recordId && ['update', 'upsert'].includes(params.action)) {
+      try {
         // @ts-expect-error dynamic model access
-        before = await this[model].findUnique({ where: { id: recordId } });
+        after = await this[modelKey].findUnique({ where: { id: recordId } });
+      } catch (e) {
+        console.warn(`No se pudo leer el estado posterior de ${modelKey}`);
       }
+    } else if (params.action === 'create') {
+      after = result;
+    } else if (params.action === 'delete') {
+      before = before ?? result;
+    }
 
-      const result = await next(params);
-
-      // Read "after" state if needed
-      let after: any = null;
-      if (recordId && ['update', 'upsert'].includes(params.action)) {
-        // @ts-expect-error dynamic model access
-        after = await this[model].findUnique({ where: { id: recordId } });
-      } else if (params.action === 'create') {
-        after = result;
-      } else if (params.action === 'delete') {
-        before = before ?? result;
-      }
-
-      // Actor is attached per-request in AuditService request scope
-      await this.audit.recordDbChange({
-        action: params.action,
-        model,
-        recordId: recordId ?? (result?.id as string | undefined),
-        before,
-        after,
-      });
-
-      return result;
+    // El actor se adjunta en el request scope del AuditService
+    await this.audit.recordDbChange({
+      action: params.action,
+      model,
+      recordId: recordId ?? (result?.id as string | undefined),
+      before,
+      after,
     });
 
-    await this.$connect();
-    await this.ensureSingletons();
+    return result;
+  });
+
+  await this.$connect();
+  
+  // Inicialización de registros fijos (Singletons)
+  await this.ensureSingletons();
+}
+
+private async ensureSingletons() {
+  try {
+    // Aseguramos que exista la configuración de censo por defecto
+    await this.censusSettings.upsert({
+      where: { id: 'singleton' },
+      update: {},
+      create: { 
+        id: 'singleton', 
+        data: {} 
+      },
+    });
+  } catch (error) {
+    // Evita que la app muera si las tablas aún no se crearon en Railway
+    console.error("Error inicializando singletons (posiblemente falta migración):", error);
   }
-
-
-
-  private async ensureSingletons() {
-    // Ensure CensusSettings singleton
-    const existing = await this.censusSettings.findUnique({ where: { id: 'singleton' } });
-    if (!existing) {
-      await this.censusSettings.create({
-        data: { id: 'singleton', data: {} },
-      });
-    }
-  }
+}
 }
