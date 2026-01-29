@@ -2,10 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsBoolean, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
 export class CreateSmtpConfigDto {
-  @ApiProperty()
-  @IsString()
-  id!: string;
-
+  
   @ApiProperty()
   @IsString()
   name!: string;

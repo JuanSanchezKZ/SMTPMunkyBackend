@@ -19,7 +19,6 @@ export class SmtpConfigsService {
   async create(dto: CreateSmtpConfigDto) {
     const created = await this.prisma.smtpConfig.create({
       data: {
-        id: dto.id,
         name: dto.name,
         host: dto.host,
         port: dto.port,
@@ -35,7 +34,6 @@ export class SmtpConfigsService {
     const updated = await this.prisma.smtpConfig.update({
       where: { id },
       data: {
-        id: dto.id,
         name: dto.name,
         host: dto.host,
         port: dto.port,
