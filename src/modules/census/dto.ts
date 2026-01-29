@@ -4,7 +4,8 @@ import {IsInt,IsOptional,IsString} from 'class-validator';
 export class UploadCensusFileDto {
   @ApiProperty()
   @IsString()
-  id!: string;
+  @IsOptional() 
+  id?: string;
 
   @ApiProperty()
   @IsInt()
@@ -17,7 +18,7 @@ export class UploadCensusFileDto {
   @ApiProperty()
   @IsString()
   type!: string;
-
+ 
   @ApiProperty()
   @IsInt()
   size!: number;
