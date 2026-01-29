@@ -10,8 +10,14 @@ import { ConfigService } from '@nestjs/config';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
 
+  const server = app.getHttpAdapter().getInstance();
+
+  server.use(require('body-parser').json({ limit: '50mb' }));
+  server.use(require('body-parser').urlencoded({ limit: '50mb', extended: true }));
+
   const config = app.get(ConfigService);
   const apiPrefix = config.get<string>('API_PREFIX', 'api');
+  
 
   app.use(
     pinoHttp({
