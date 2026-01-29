@@ -20,10 +20,10 @@ async function bootstrap() {
   );
 
   app.use(helmet());
-  app.enableCors({
-    origin: (config.get<string>('CORS_ORIGINS') || '').split(',').filter(Boolean),
-    credentials: true,
-  });
+ app.enableCors({
+  origin: true, // Esto refleja el origen de la petición, permitiendo cualquier cosa
+  credentials: true,
+});
 
   app.setGlobalPrefix(apiPrefix);
 
