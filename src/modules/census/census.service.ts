@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class CensusService {
@@ -33,7 +34,7 @@ export class CensusService {
 
     const created = await this.prisma.censusFile.create({
       data: { 
-        id: dto.id, 
+        id: randomUUID(), 
         name: dto.name, 
         type: dto.type, 
         size:dto.size, 
