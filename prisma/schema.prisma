@@ -61,9 +61,9 @@ model CensusFile {
   id          String   @id
   name        String
   type        String
-  size        Int
+  size        BigInt
   storagePath String   // file path on server
-  uploadDate  Int
+  uploadDate  BigInt
   createdAt   DateTime @default(now())
 }
 
