@@ -7,6 +7,10 @@ import pinoHttp from 'pino-http';
 import { AppModule } from './modules/app.module';
 import { ConfigService } from '@nestjs/config';
 
+(BigInt.prototype as any).toJSON = function () {
+  return this.toString();
+};
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
 
