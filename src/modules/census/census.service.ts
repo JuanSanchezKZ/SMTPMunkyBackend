@@ -23,29 +23,33 @@ export class CensusService {
 })};
 
 async uploadFile(dto: any, file: Express.Multer.File) {
-    if (!dto.content) throw new BadRequestException('Content is required for DB storage');
+  // ✅ 1. Validamos el argumento 'file', NO 'dto.file'
+  if (!file) throw new BadRequestException('El archivo binario es requerido');
 
-    const created = await this.prisma.censusFile.create({
-      data: { 
-        id: randomUUID(), 
-        name: dto.name, 
-        type: dto.type, 
-        size:dto.size, 
-        file: file.buffer,
-        uploadDate: dto.uploadDate,
-        storagePath: 'db_stored' 
-      },
-    });
+  // ✅ 2. Usamos file.buffer para Prisma
+  const created = await this.prisma.censusFile.create({
+    data: { 
+      id: randomUUID(), 
+      name: dto.name, 
+      type: dto.type, 
+      size: Number(dto.size), // Aseguramos que sea número si el DTO falló en transformar
+      file: file.buffer,      // El binario real
+      uploadDate: new Date(Number(dto.uploadDate)).getTime(), // Prisma suele pedir DateTime
+      storagePath: 'db_stored' 
+    },
+  });
 
-    return { 
-      id: created.id, 
-      name: created.name, 
-      size: created.size, 
-      type: created.type, 
-      uploadDate: created.uploadDate, 
-      content: dto.content 
-    };
-  }
+  // ✅ 3. Retornamos el objeto para que el Frontend lo reciba
+  return { 
+    id: created.id, 
+    name: created.name, 
+    size: created.size, 
+    type: created.type, 
+    uploadDate: created.uploadDate, 
+    // Mantenemos 'content' para que el front no rompa, pero mandamos el base64 de vuelta
+    content: `data:${created.type};base64,${file.buffer.toString('base64')}` 
+  };
+}
 
   async removeFile(id: string) {
     const row = await this.prisma.censusFile.findUnique({ where: { id } });
