@@ -22,6 +22,10 @@ async function bootstrap() {
   const config = app.get(ConfigService);
   const apiPrefix = config.get<string>('API_PREFIX', 'api');
   
+  app.useGlobalPipes(new ValidationPipe({
+  transform: true, 
+  whitelist: true,
+}));
 
   app.use(
     pinoHttp({
