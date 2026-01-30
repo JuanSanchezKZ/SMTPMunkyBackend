@@ -27,9 +27,6 @@ export class UploadCensusFileDto {
     description:
       'Data URL (data:<mime>;base64,...) or raw base64 string. If omitted, use multipart /uploads and then create with storagePath.',
   })
-  @IsOptional()
-  @IsString()
-  content?: string;
 
   @ApiPropertyOptional({ description: 'Server-side path (advanced use). Prefer content or /uploads.' })
   @IsOptional()

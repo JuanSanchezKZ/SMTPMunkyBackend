@@ -63,7 +63,7 @@ model CensusFile {
   type        String
   size        BigInt
   storagePath String   // file path on server
-  content     Bytes
+  file     Bytes
   uploadDate  BigInt
   createdAt   DateTime @default(now())
 }

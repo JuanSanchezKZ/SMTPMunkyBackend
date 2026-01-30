@@ -19,8 +19,8 @@ export class CensusFilesController {
 
   @ApiBearerAuth()
   @Post()
-  upload(@Body() dto: UploadCensusFileDto) {
-    return this.service.uploadFile(dto);
+  upload(@Body() dto: UploadCensusFileDto, file: Express.Multer.File) {
+    return this.service.uploadFile(dto, file);
   }
 
   @ApiBearerAuth()

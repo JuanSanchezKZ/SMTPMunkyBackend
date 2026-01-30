@@ -4,33 +4,26 @@ import { randomUUID } from 'crypto';
 
 @Injectable()
 export class CensusService {
-  // Ya no necesitamos inyectar UploadsService si guardamos todo en la DB
+
   constructor(private readonly prisma: PrismaService) {}
 
   async listFiles() {
     const rows = await this.prisma.censusFile.findMany({ orderBy: { createdAt: 'desc' } });
     
-    // El mapeo es mucho más rápido porque no hay E/S de disco (fs)
     return rows.map((r) => {
-      // r.content es un Buffer en Prisma cuando el campo es Bytes
-      const base64 = r.content.toString('base64');
-      return {
-        id: r.id,
-        name: r.name,
-        size: r.size,
-        type: r.type,
-        uploadDate: r.uploadDate ?? r.createdAt.getTime(),
-        content: `data:${r.type};base64,${base64}`,
-      };
-    });
-  }
 
-  async uploadFile(dto: any) {
+  return {
+    id: r.id,
+    name: r.name,
+    size: r.size,
+    type: r.type, 
+    uploadDate: r.uploadDate ? r.uploadDate : r.createdAt.getTime(),
+    file: r.file,
+  };
+})};
+
+async uploadFile(dto: any, file: Express.Multer.File) {
     if (!dto.content) throw new BadRequestException('Content is required for DB storage');
-
-    // Procesamos el base64 a Buffer
-    const base64Data = dto.content.includes(',') ? dto.content.split(',')[1] : dto.content;
-    const buf = Buffer.from(base64Data, 'base64');
 
     const created = await this.prisma.censusFile.create({
       data: { 
@@ -38,9 +31,9 @@ export class CensusService {
         name: dto.name, 
         type: dto.type, 
         size:dto.size, 
-        content: buf, // 👈 Guardamos el binario en Postgres
+        file: file.buffer,
         uploadDate: dto.uploadDate,
-        storagePath: 'db_stored' // Solo como referencia
+        storagePath: 'db_stored' 
       },
     });
 
@@ -65,8 +58,8 @@ export class CensusService {
     const row = await this.prisma.censusFile.findUnique({ where: { id } });
     if (!row) throw new NotFoundException();
     
-    // Leemos directamente de la columna content (Bytes)
-    return { fileName: row.name, mimeType: row.type, buffer: row.content };
+    
+    return { fileName: row.name, mimeType: row.type, buffer: row.file };
   }
 
   async getSettings() {
