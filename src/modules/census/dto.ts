@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Type, Transform  } from 'class-transformer';
 import {IsInt,IsOptional,IsString} from 'class-validator';
 
 export class UploadCensusFileDto {
@@ -8,7 +8,7 @@ export class UploadCensusFileDto {
   @IsOptional() 
   id?: string;
 
-  @Type(() => Number) // ✅ Convierte el timestamp string a number
+  @Transform(({ value }) => Number(value)) // ✅ Convierte el timestamp string a number
   @IsInt()
   uploadDate!: number;
 
@@ -20,7 +20,7 @@ export class UploadCensusFileDto {
   @IsString()
   type!: string;
  
-  @Type(() => Number) // ✅ Convierte el string "1024" a number 1024
+  @Transform(({ value }) => Number(value)) // ✅ Convierte el string "1024" a number 1024
   @IsInt()
   size!: number;
 

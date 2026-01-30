@@ -39,6 +39,8 @@ async uploadFile(dto: any, file: Express.Multer.File) {
     },
   });
 
+  console.log(created)
+
   // ✅ 3. Retornamos el objeto para que el Frontend lo reciba
   return { 
     id: created.id, 
